@@ -91,8 +91,8 @@ func checkReferer(r *http.Request) bool {
 func getColorFromKV(imgURL string) (string, error) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
-	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("GET", kvURL+"/"+key, nil)
+	_ = hex.EncodeToString(hasher.Sum(nil))
+	req, err := http.NewRequest("GET", kvURL+"/"+"test", nil)
 	if err != nil {
 		return "", err
 	}
@@ -121,8 +121,8 @@ func getColorFromKV(imgURL string) (string, error) {
 func setColorToKV(imgURL string, color string) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
-	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("PUT", kvURL+"/"+key, bytes.NewBuffer([]byte(color)))
+	_ = hex.EncodeToString(hasher.Sum(nil))
+	req, err := http.NewRequest("PUT", kvURL+"/"+"test", bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
 		return
