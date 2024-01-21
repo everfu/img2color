@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,9 +8,9 @@ import (
 	"fmt"
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"image"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -27,6 +26,8 @@ var kvEnable bool
 var kvURL string
 var kvToken string
 
+var rdb *redis.Client
+
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -35,8 +36,11 @@ func init() {
 
 	kvEnable, _ = strconv.ParseBool(os.Getenv("KV_ENABLE"))
 	if kvEnable {
-		kvURL = os.Getenv("KV_REST_API_URL")
-		kvToken = os.Getenv("KV_REST_API_TOKEN")
+		rdb = redis.NewClient(&redis.Options{
+			Addr:     kvURL,   // Redis server URL
+			Password: kvToken, // no password set
+			DB:       0,       // use default DB
+		})
 	}
 }
 
@@ -92,52 +96,27 @@ func getColorFromKV(imgURL string) (string, error) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
 	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("GET", kvURL+"/get/"+key, nil)
-	if err != nil {
-		return "", err
-	}
 
-	req.Header.Set("Authorization", "Bearer "+kvToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
+	color, err := rdb.Get(ctx, key).Result()
+	if err == redis.Nil {
 		return "", fmt.Errorf("Not Found")
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	} else if err != nil {
 		return "", err
 	}
 
-	return string(body), nil
+	return color, nil
 }
 
 func setColorToKV(imgURL string, color string) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
 	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("PUT", kvURL+"/set/"+key, bytes.NewBuffer([]byte(color)))
+
+	err := rdb.Set(ctx, key, color, 0).Err()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
-	req.Header.Set("Authorization", "Bearer "+kvToken)
-	req.Header.Set("Content-Type", "text/plain")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer resp.Body.Close()
 }
 
 func getColorFromImageURL(imgURL string) (string, error) {
