@@ -85,12 +85,17 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	} else if kvEnable {
 		color, err = getColorFromKV(imgKey)
 		if err != nil {
-			color, err = getColorFromImageURL(imgURL)
-			if err != nil {
+			if err.Error() == "Not Found" {
+				color, err = getColorFromImageURL(imgURL)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				setColorToKV(imgKey, color)
+			} else {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			setColorToKV(imgKey, color)
 		}
 	} else {
 		color, err = getColorFromImageURL(imgURL)
