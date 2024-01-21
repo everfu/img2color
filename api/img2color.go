@@ -3,7 +3,8 @@ package handler
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/disintegration/imaging"
@@ -88,7 +89,9 @@ func checkReferer(r *http.Request) bool {
 }
 
 func getColorFromKV(imgURL string) (string, error) {
-	key := base64.URLEncoding.EncodeToString([]byte(imgURL))
+	hasher := sha256.New()
+	hasher.Write([]byte(imgURL))
+	key := hex.EncodeToString(hasher.Sum(nil))
 	req, err := http.NewRequest("GET", kvURL+"/"+key, nil)
 	if err != nil {
 		return "", err
@@ -116,7 +119,9 @@ func getColorFromKV(imgURL string) (string, error) {
 }
 
 func setColorToKV(imgURL string, color string) {
-	key := base64.URLEncoding.EncodeToString([]byte(imgURL))
+	hasher := sha256.New()
+	hasher.Write([]byte(imgURL))
+	key := hex.EncodeToString(hasher.Sum(nil))
 	req, err := http.NewRequest("PUT", kvURL+"/"+key, bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
