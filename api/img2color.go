@@ -3,12 +3,12 @@ package handler
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"image"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -64,7 +64,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgKey := base64.URLEncoding.EncodeToString([]byte(imgURL))
+	imgKey := getImgKey(imgURL)
 
 	var color string
 	var err error
@@ -188,4 +188,12 @@ func getColorFromImageURL(imgURL string) (string, error) {
 	color := fmt.Sprintf("#%02X%02X%02X", uint8(rVal>>8), uint8(g>>8), uint8(b>>8))
 
 	return color, nil
+}
+
+func getImgKey(imgURL string) string {
+	u, err := url.Parse(imgURL)
+	if err != nil {
+		return imgURL
+	}
+	return u.Host + u.Path
 }
