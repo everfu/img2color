@@ -19,6 +19,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var Handler http.HandlerFunc = handler
+
 type Response struct {
 	RGB string `json:"RGB"`
 }
