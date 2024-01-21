@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -90,7 +91,10 @@ func checkReferer(r *http.Request) bool {
 	referer := r.Header.Get("Referer")
 	allowedReferers := strings.Split(os.Getenv("ALLOWED_REFERERS"), ",")
 	for _, allowedReferer := range allowedReferers {
-		if allowedReferer == "*" || strings.HasSuffix(referer, allowedReferer) {
+		allowedReferer = strings.ReplaceAll(allowedReferer, ".", "\\.")
+		allowedReferer = strings.ReplaceAll(allowedReferer, "*", ".*")
+		match, _ := regexp.MatchString(allowedReferer, referer)
+		if match {
 			return true
 		}
 	}
