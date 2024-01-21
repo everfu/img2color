@@ -61,12 +61,6 @@ func init() {
 		kvURL = os.Getenv("KV_REST_API_URL")
 		kvToken = os.Getenv("KV_REST_API_TOKEN")
 	}
-
-	http.HandleFunc("/api", checkReferer(handler))
-	println("Server is running at localhost:" + os.Getenv("PORT"))
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		println(err)
-	}
 }
 
 /**
