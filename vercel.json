@@ -1,5 +1,5 @@
 {
-  "regions": "hkg1",
+  "regions": ["hkg1"],
   "routes": [
     {
       "src": "/api",
