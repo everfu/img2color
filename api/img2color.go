@@ -3,8 +3,6 @@ package handler
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -31,6 +29,13 @@ var kvEnable bool
 var kvURL string
 var kvToken string
 
+/*
+ * init function
+ * - Load .env
+ * - Check Redis enable
+ * - Check KV enable
+ * - Start server
+ */
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -53,6 +58,11 @@ func init() {
 	}
 }
 
+/**
+ * Handler function
+ * - Check referer
+ * - Get img parameter
+ */
 func Handler(w http.ResponseWriter, r *http.Request) {
 	if !checkReferer(r) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -65,37 +75,30 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	imgKey := hashKey(imgURL)
-
 	var color string
 	var err error
 	if rdb != nil {
-		color, err = getColorFromCache(imgKey)
+		color, err = getColorFromCache(imgURL)
 		if err == redis.Nil {
 			color, err = getColorFromImageURL(imgURL)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			setColorToCache(imgKey, color)
+			setColorToCache(imgURL, color)
 		} else if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else if kvEnable {
-		color, err = getColorFromKV(imgKey)
+		color, err = getColorFromKV(imgURL)
 		if err != nil {
-			if err.Error() == "Not Found" {
-				color, err = getColorFromImageURL(imgURL)
-				if err != nil {
-					http.Error(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				setColorToKV(imgKey, color)
-			} else {
+			color, err = getColorFromImageURL(imgURL)
+			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
+			setColorToKV(imgURL, color)
 		}
 	} else {
 		color, err = getColorFromImageURL(imgURL)
@@ -121,16 +124,16 @@ func checkReferer(r *http.Request) bool {
 	return false
 }
 
-func getColorFromCache(imgKey string) (string, error) {
-	return rdb.Get(ctx, imgKey).Result()
+func getColorFromCache(imgURL string) (string, error) {
+	return rdb.Get(ctx, imgURL).Result()
 }
 
-func setColorToCache(imgKey string, color string) {
-	rdb.Set(ctx, imgKey, color, 24*time.Hour)
+func setColorToCache(imgURL string, color string) {
+	rdb.Set(ctx, imgURL, color, 24*time.Hour)
 }
 
-func getColorFromKV(imgKey string) (string, error) {
-	req, err := http.NewRequest("GET", kvURL+"/"+imgKey, nil)
+func getColorFromKV(imgURL string) (string, error) {
+	req, err := http.NewRequest("GET", kvURL+"/"+imgURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -156,8 +159,8 @@ func getColorFromKV(imgKey string) (string, error) {
 	return string(body), nil
 }
 
-func setColorToKV(imgKey string, color string) {
-	req, err := http.NewRequest("PUT", kvURL+"/"+imgKey, bytes.NewBuffer([]byte(color)))
+func setColorToKV(imgURL string, color string) {
+	req, err := http.NewRequest("PUT", kvURL+"/"+imgURL, bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -194,10 +197,4 @@ func getColorFromImageURL(imgURL string) (string, error) {
 	color := fmt.Sprintf("#%02X%02X%02X", uint8(rVal>>8), uint8(g>>8), uint8(b>>8))
 
 	return color, nil
-}
-
-func hashKey(key string) string {
-	hasher := sha256.New()
-	hasher.Write([]byte(key))
-	return hex.EncodeToString(hasher.Sum(nil))
 }
