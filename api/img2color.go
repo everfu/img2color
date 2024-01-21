@@ -69,41 +69,6 @@ func init() {
 	}
 }
 
-/*
- * Main
- * - Load .env
- * - Check Redis enable
- * - Check KV enable
- * - Start server
- */
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		println("Error loading .env file")
-	}
-
-	redisEnable, _ := strconv.ParseBool(os.Getenv("REDIS_ENABLE"))
-	if redisEnable {
-		rdb = redis.NewClient(&redis.Options{
-			Addr:     os.Getenv("REDIS_HOST"),
-			Password: os.Getenv("REDIS_PASSWORD"),
-			DB:       0,
-		})
-	}
-
-	kvEnable, _ = strconv.ParseBool(os.Getenv("KV_ENABLE"))
-	if kvEnable {
-		kvURL = os.Getenv("KV_REST_API_URL")
-		kvToken = os.Getenv("KV_REST_API_TOKEN")
-	}
-
-	http.HandleFunc("/api", checkReferer(handler))
-	println("Server is running at localhost:" + os.Getenv("PORT"))
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		println(err)
-	}
-}
-
 /**
  * Middleware
  * - Check Referer
