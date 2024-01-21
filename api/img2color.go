@@ -92,7 +92,7 @@ func getColorFromKV(imgURL string) (string, error) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
 	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("GET", kvURL+"/"+key, nil)
+	req, err := http.NewRequest("GET", kvURL+"/get/"+key, nil)
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +122,7 @@ func setColorToKV(imgURL string, color string) {
 	hasher := sha256.New()
 	hasher.Write([]byte(imgURL))
 	key := hex.EncodeToString(hasher.Sum(nil))
-	req, err := http.NewRequest("PUT", kvURL+"/"+key, bytes.NewBuffer([]byte(color)))
+	req, err := http.NewRequest("PUT", kvURL+"/set/"+key, bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
 		return
