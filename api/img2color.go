@@ -195,5 +195,5 @@ func getImgKey(imgURL string) string {
 	if err != nil {
 		return imgURL
 	}
-	return u.Host + u.Path
+	return strings.ReplaceAll(u.Host, ".", "_") + u.Path
 }
