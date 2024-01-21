@@ -122,7 +122,7 @@ func setColorToCache(imgURL string, color string) {
 }
 
 func getColorFromKV(imgURL string) (string, error) {
-	uuidKey := uuid.NewSHA1(uuid.NameURL, []byte(imgURL)).String()
+	uuidKey := uuid.NewMD5(uuid.NameSpaceURL, []byte(imgURL)).String()
 	req, err := http.NewRequest("GET", kvURL+"/"+uuidKey, nil)
 	if err != nil {
 		return "", err
@@ -150,7 +150,7 @@ func getColorFromKV(imgURL string) (string, error) {
 }
 
 func setColorToKV(imgURL string, color string) {
-	uuidKey := uuid.NewSHA1(uuid.NameURL, []byte(imgURL)).String()
+	uuidKey := uuid.NewMD5(uuid.NameSpaceURL, []byte(imgURL)).String()
 	req, err := http.NewRequest("PUT", kvURL+"/"+uuidKey, bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
