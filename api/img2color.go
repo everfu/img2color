@@ -23,23 +23,20 @@ type Response struct {
 	RGB string `json:"RGB"`
 }
 
-// Redis
 var ctx = context.Background()
 var rdb *redis.Client
-
-// KV
 var kvEnable bool
 var kvURL string
 var kvToken string
 
+// init
 /*
- * Main
  * - Load .env
  * - Check Redis enable
  * - Check KV enable
  * - Start server
  */
-func main() {
+func init() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
@@ -59,39 +56,20 @@ func main() {
 		kvURL = os.Getenv("KV_REST_API_URL")
 		kvToken = os.Getenv("KV_REST_API_TOKEN")
 	}
-
-	http.HandleFunc("/api", checkReferer(handler))
-	fmt.Println("Server is running at localhost:" + os.Getenv("PORT"))
-	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
-		fmt.Println(err)
-	}
 }
 
+// Handler
 /**
- * Middleware
- * - Check Referer
+ * @param w http.ResponseWriter
+ * @param r *http.Request
+ * @return void
  */
-func checkReferer(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		referer := r.Header.Get("Referer")
-		allowedReferers := strings.Split(os.Getenv("ALLOWED_REFERERS"), ",")
-		for _, allowedReferer := range allowedReferers {
-			if allowedReferer == "*" || strings.HasSuffix(referer, allowedReferer) {
-				next(w, r)
-				return
-			}
-		}
+func Handler(w http.ResponseWriter, r *http.Request) {
+	if !checkReferer(r) {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
-}
 
-/**
- * Handler
- * - Get img parameter
- * - Get color from cache or image
- * - Return response
- */
-func handler(w http.ResponseWriter, r *http.Request) {
 	imgURL := r.URL.Query().Get("img")
 	if imgURL == "" {
 		http.Error(w, "img parameter is required", http.StatusBadRequest)
@@ -136,27 +114,47 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
+// checkReferer
 /**
- * Cache
- * - Get color from cache
- * - Set color to cache
+ * @param r *http.Request
+ * @return bool
+ */
+func checkReferer(r *http.Request) bool {
+	referer := r.Header.Get("Referer")
+	allowedReferers := strings.Split(os.Getenv("ALLOWED_REFERERS"), ",")
+	for _, allowedReferer := range allowedReferers {
+		if allowedReferer == "*" || strings.HasSuffix(referer, allowedReferer) {
+			return true
+		}
+	}
+	return false
+}
+
+// getColorFromCache
+/**
+ * @param imgURL string
+ * @return string
+ * @return error
  */
 func getColorFromCache(imgURL string) (string, error) {
 	return rdb.Get(ctx, imgURL).Result()
 }
 
+// setColorToCache
 /**
- * Cache
- * - Get color from cache
- * - Set color to cache
+ * @param imgURL string
+ * @param color string
+ * @return void
  */
 func setColorToCache(imgURL string, color string) {
 	rdb.Set(ctx, imgURL, color, 24*time.Hour)
 }
 
+// getColorFromKV
 /**
- * KV
- * - Get color from KV
+ * @param imgURL string
+ * @return string
+ * @return error
  */
 func getColorFromKV(imgURL string) (string, error) {
 	resp, err := http.Get(kvURL + "/" + imgURL)
@@ -177,9 +175,11 @@ func getColorFromKV(imgURL string) (string, error) {
 	return string(body), nil
 }
 
+// setColorToKV
 /**
- * KV
- * - Set color to KV
+ * @param imgURL string
+ * @param color string
+ * @return void
  */
 func setColorToKV(imgURL string, color string) {
 	req, err := http.NewRequest("PUT", kvURL+"/"+imgURL, bytes.NewBuffer([]byte(color)))
@@ -200,9 +200,11 @@ func setColorToKV(imgURL string, color string) {
 	defer resp.Body.Close()
 }
 
+// getColorFromImageURL
 /**
- * Image
- * - Get color from image
+ * @param imgURL string
+ * @return string
+ * @return error
  */
 func getColorFromImageURL(imgURL string) (string, error) {
 	resp, err := http.Get(imgURL)
