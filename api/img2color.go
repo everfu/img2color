@@ -3,21 +3,18 @@ package handler
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/disintegration/imaging"
+	"github.com/fogleman/gg"
+	"github.com/joho/godotenv"
 	"image"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/disintegration/imaging"
-	"github.com/fogleman/gg"
-	"github.com/go-redis/redis/v8"
-	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 )
 
 type Response struct {
@@ -25,7 +22,6 @@ type Response struct {
 }
 
 var ctx = context.Background()
-var rdb *redis.Client
 var kvEnable bool
 var kvURL string
 var kvToken string
@@ -34,15 +30,6 @@ func init() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
-	}
-
-	redisEnable, _ := strconv.ParseBool(os.Getenv("REDIS_ENABLE"))
-	if redisEnable {
-		rdb = redis.NewClient(&redis.Options{
-			Addr:     os.Getenv("REDIS_HOST"),
-			Password: os.Getenv("REDIS_PASSWORD"),
-			DB:       0,
-		})
 	}
 
 	kvEnable, _ = strconv.ParseBool(os.Getenv("KV_ENABLE"))
@@ -66,20 +53,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 
 	var color string
 	var err error
-	if rdb != nil {
-		color, err = getColorFromCache(imgURL)
-		if err == redis.Nil {
-			color, err = getColorFromImageURL(imgURL)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			setColorToCache(imgURL, color)
-		} else if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	} else if kvEnable {
+	if kvEnable {
 		color, err = getColorFromKV(imgURL)
 		if err != nil {
 			color, err = getColorFromImageURL(imgURL)
@@ -113,17 +87,9 @@ func checkReferer(r *http.Request) bool {
 	return false
 }
 
-func getColorFromCache(imgURL string) (string, error) {
-	return rdb.Get(ctx, imgURL).Result()
-}
-
-func setColorToCache(imgURL string, color string) {
-	rdb.Set(ctx, imgURL, color, 24*time.Hour)
-}
-
 func getColorFromKV(imgURL string) (string, error) {
-	uuidKey := uuid.NewMD5(uuid.NameSpaceURL, []byte(imgURL)).String()
-	req, err := http.NewRequest("GET", kvURL+"/"+uuidKey, nil)
+	key := base64.URLEncoding.EncodeToString([]byte(imgURL))
+	req, err := http.NewRequest("GET", kvURL+"/"+key, nil)
 	if err != nil {
 		return "", err
 	}
@@ -150,8 +116,8 @@ func getColorFromKV(imgURL string) (string, error) {
 }
 
 func setColorToKV(imgURL string, color string) {
-	uuidKey := uuid.NewMD5(uuid.NameSpaceURL, []byte(imgURL)).String()
-	req, err := http.NewRequest("PUT", kvURL+"/"+uuidKey, bytes.NewBuffer([]byte(color)))
+	key := base64.URLEncoding.EncodeToString([]byte(imgURL))
+	req, err := http.NewRequest("PUT", kvURL+"/"+key, bytes.NewBuffer([]byte(color)))
 	if err != nil {
 		fmt.Println(err)
 		return
