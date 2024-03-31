@@ -1,3 +1,4 @@
+// 如果在本地运行请改为 main
 package handler
 
 import (
@@ -43,9 +44,9 @@ func init() {
 	kvEnable, _ = strconv.ParseBool(os.Getenv("KV_ENABLE"))
 	if kvEnable {
 		rdb = redis.NewClient(&redis.Options{
-			Addr:     kvURL,   // Redis server URL
-			Password: kvToken, // no password set
-			DB:       0,       // use default DB
+			Addr:     kvURL,
+			Password: kvToken,
+			DB:       0,
 		})
 	}
 }
@@ -166,7 +167,6 @@ func getColorFromImageURL(imgURL string) (string, error) {
 	var img image.Image
 	img, _, err = image.Decode(buf)
 	if err != nil {
-		// If standard image decoding fails, try to decode as WebP
 		img, err = webp.Decode(buf)
 		if err != nil {
 			return "", err
