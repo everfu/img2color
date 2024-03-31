@@ -21,8 +21,5 @@ Use Goland to easily implement an image to get the accent color.
 5. Test
    <img width="1000" alt="image" src="https://github.com/valor-x/img2color/assets/74389842/d3030011-323a-4b2a-95a2-9f32f94444cd">
 
-## Contribute
-[@Efu](https://github.com/efuo/)
-
 ## Warehouse
 <img width="1000" alt="image" src="https://repobeats.axiom.co/api/embed/9a7ae5077e31ed3b650612589a712c220da1dd18.svg">
