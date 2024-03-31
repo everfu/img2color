@@ -25,11 +25,7 @@
    ![](https://github.com/wleelw/img2color/assets/74389842/f2e95b9b-4756-419b-aad6-2caab03e12ac)
 
 ## 贡献
-[@wleelw(王卓Sco)](https://github.com/wleelw/)
-
-## 赞赏
-
-[@王卓Sco](https://afdian.net/a/wleelw0u0) 
+[@Efu](https://github.com/efuo/)
 
 ## 仓库统计
 ![Alt](https://repobeats.axiom.co/api/embed/9a7ae5077e31ed3b650612589a712c220da1dd18.svg "Repobeats analytics image")
