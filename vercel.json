@@ -1,9 +1,16 @@
 {
   "regions": ["hkg1"],
+  "cleanUrls": true,
   "routes": [
     {
       "src": "/api",
       "dest": "/api/img2color.go"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/api"
     }
   ]
 }
