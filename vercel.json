@@ -1,6 +1,5 @@
 {
   "regions": ["hkg1"],
-  "cleanUrls": true,
   "routes": [
     {
       "src": "/api",
